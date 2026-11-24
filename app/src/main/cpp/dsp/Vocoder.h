@@ -49,7 +49,7 @@ public:
         else if (source_ == 2) carrier = clamp(noiseCarrier * 0.6f + osc, -1.f, 1.f);
 
         float sum = 0.f;
-        for (size_t i = 0; i < formants_.size(); ++i) {
+        for (size_t i = 0; i < BANDS; ++i) {
             const float fc = clamp(formants_[i] * scale_, 30.f, sr_ * 0.45f);
 
             modBands_[i].process(modulator, fc, q_, sr_);
