@@ -6,9 +6,11 @@
 - ✅ Presets Transformers (Prime, Starscream, Transformation, Corrupted Data, Servo) e botões de disparo na UI.
 - ✅ `GranularEngine` (scatter/freeze/reverse/pitch-drop, 24 vozes) e `Vocoder` (12 formantes, portadora ruído/osc) integrados à cadeia.
 - ✅ Fusão com Extreme Audio Lab: `DestructionLab`, `ModMatrix`, `SubSynth`, 6 vozes de bateria, CI com 4 ABIs, kill switch e `resetDspState()`.
+- ✅ CI validado em 24/11/2026: artefato `ExtremeAudioLab-debug-v0.5.0` gerado (run #6), com as 4 ABIs.
+- ✅ Correções de build: `GlitchProcessor::rate_` (variável inexistente), `Vocoder::formants_.size()` (array C) e `android-actions/setup-android@v3` (pacote `tools` descontinuado) substituído por instalação direta via `sdkmanager`.
 
 ## Prioridade alta
-1. **Validar build** com Android SDK 35 + NDK 27 e dispositivo real (latência Oboe e permissões de microfone), pelo Actions ou Android Studio.
+1. **Validar em dispositivo real** (o APK já compila no CI): latência Oboe, permissões de microfone e estabilidade do Feedback/Destruction Lab.
 2. **Identificar os módulos da foto**: preciso de uma imagem do rack em maior resolução/recorte dos painéis. O mapa funcional já está em `ANALYSIS.md`, mas os nomes de fabricante não foram legíveis.
 3. **Segurança auditiva**: confirmar que o limiter atua mesmo com `micGain=0.95` e `masterGain=1.0`; adicionar "panic button" que zera ganhos.
 4. **Fallback de áudio**: se `AAudio` falhar, forçar `OpenSL ES`; se microfone exclusivo falhar, abrir em `SharingMode::Shared`.

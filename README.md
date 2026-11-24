@@ -26,8 +26,8 @@ Package: `com.extremeaudiolab` · versão `0.5.0` (`versionCode 5`).
 | DSP nativo (todos os módulos acima) | implementado |
 | UI Compose (Patch, Seq, Kaoss, Stream) | implementado |
 | Presets (6 patches) + JSON validado | implementado |
-| CI GitHub Actions (4 ABIs) | implementado — aguardando primeira execução |
-| Build/execução em dispositivo | pendente |
+| CI GitHub Actions (4 ABIs) | ✅ validado — APK gerado em 24/11/2026 (run #6) |
+| Build/execução em dispositivo | pendente (instalar o APK e testar) |
 
 ## Estrutura
 
