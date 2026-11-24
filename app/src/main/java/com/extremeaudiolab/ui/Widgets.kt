@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -24,6 +25,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
@@ -120,6 +122,7 @@ private fun ValueDisplay(text: String, accent: Color) {
  * Fader com valor sempre visível, escala e ajuda em linguagem simples.
  * Curva LOG deixa controles de frequência/tempo úteis em todo o curso do slider.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Fader(
     label: String,
