@@ -13,9 +13,14 @@
 - ✅ Identidade **PMNT NOISE LAB**: interface eurorack (case com trilhos/parafusos, painéis com cores Make Noise/Intellijel/Mutable/Buchla/Doepfer/Erica, visores e escalas nos faders).
 - ✅ Dinâmica extrema: fader **Intensidade** (6 módulos de uma vez), **Pump** sincronizado ao BPM, estalos abrasivos estilo *Pulse Demon*, defaults mais agressivos e preset **PULSE DEMON / Parede**.
 - ✅ Kaoss: latch confiável — arrastar usa sempre o estado atual, não reaplica programa antigo e não destrava o pad; travar congela x/y e trocar efeito preserva a escolha.
+- ✅ Estabilidade (feedback do usuário 24/11): `setTempo`, `setKaoss`, disparos de glitch/grãos e reset param de escrever direto no DSP pela thread da UI. Tudo passa por `std::atomic` e é aplicado em `applyDeferred_()`, dentro do callback. Saída com `isfinite` + clamp para um NaN nunca chegar ao Oboe.
+- ✅ `PULSE DEMON / Parede` reequilibrado: ruído branco contínuo no lugar do tipo "crackle" esparso, estalos menos frequentes, pump/saturação/volume reduzidos — parede cheia sem volume estourado.
+- ✅ Transformers em modo **solo**: intensidade global dos presets caiu de 0,80 para 0,20–0,30 e os efeitos secundários foram abaixados, deixando o vocoder/ring-mod/granular/glitch/ressonador de cada um identificável.
+- ✅ Case eurorack realmente visível: orelhas laterais de madeira com parafusos, trilhos de 24 dp e faixa laranja; a Scaffold deixa de cobrir a moldura.
+- ✅ Barra inferior corrigida: `windowOptOutEdgeToEdgeEnforcement` + `navigationBarsPadding()` mantêm PATCH/SEQ/KAOSS/GRAVAR acima da navegação do Android 15 (targetSdk 35).
 
 ## Prioridade alta
-1. **Validar em dispositivo real** (o APK já compila no CI): latência Oboe, permissões de microfone e estabilidade do Feedback/Destruction Lab.
+1. **Validar em dispositivo real** (o APK já compila no CI): confirmar que os fechamentos sumiram ao trocar presets e mexer em faders, além de latência Oboe, permissões de microfone e estabilidade do Feedback/Destruction Lab.
 2. **Identificar os módulos da foto**: preciso de uma imagem do rack em maior resolução/recorte dos painéis. O mapa funcional já está em `ANALYSIS.md`, mas os nomes de fabricante não foram legíveis.
 3. **Segurança auditiva**: confirmar em dispositivo que o limitador atua com `micGain=0.95`, `masterGain=1.0`, `intensity=1` e saturação no máximo; o "panic button" (KILL) já zera volume, microfone, intensidade, pump e efeitos.
 4. **Fallback de áudio**: se `AAudio` falhar, forçar `OpenSL ES`; se microfone exclusivo falhar, abrir em `SharingMode::Shared`.

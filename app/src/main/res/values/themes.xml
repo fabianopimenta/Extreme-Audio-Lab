@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.ExtremeAudioLab" parent="android:Theme.Material.NoActionBar" />
+    <style name="Theme.ExtremeAudioLab" parent="android:Theme.Material.NoActionBar">
+        <!-- Evita que o conteúdo vá para baixo da barra de navegação no Android 15. -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement">true</item>
+    </style>
 </resources>

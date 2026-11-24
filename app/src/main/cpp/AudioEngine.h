@@ -44,9 +44,15 @@ struct Params {
     std::atomic<float> synthFreq{110.f}, synthLevel{0.f}, synthWave{3};
     std::atomic<float> threshold{-2.f}, masterGain{0.7f};
     // Respiração global (movimento lento) e cor final controlável pelo usuário.
-    std::atomic<float> motionDepth{0.55f}, motionRate{0.60f}, saturation{0.45f};
+    std::atomic<float> motionDepth{0.50f}, motionRate{0.60f}, saturation{0.40f};
     // Intensidade global (controla 6 módulos de uma vez) e pump ritmico pelo BPM.
-    std::atomic<float> intensity{0.80f}, pump{0.40f};
+    std::atomic<float> intensity{0.65f}, pump{0.25f};
+    // Estado que antes era escrito direto na thread da UI: agora vai por atomico
+    // e so e aplicado dentro de applyParams_(), na thread de audio.
+    std::atomic<float> bpm{138.f}, swing{0.12f};
+    std::atomic<float> kaossProgram{0}, kaossX{0.5f}, kaossY{0.5f}, kaossMix{1.f};
+    std::atomic<bool> kaossLatch{false};
+    std::atomic<bool> resetDspFlag{true}, triggerGlitchFlag{false}, triggerGranularFlag{false};
 };
 
 class AudioEngine {
@@ -64,14 +70,11 @@ public:
     void setKaoss(int program, float x, float y, bool latch, float mix);
     void triggerGlitch();
     void triggerGranular();
-    /** Zera estados com memória ao (re)iniciar o motor. */
+    /** Só sinaliza; o reset real acontece na thread de áudio, no primeiro render. */
     void resetDspState() {
-        mod_.reset();
-        tones_.reset();
-        destruction_.reset();
-        motionPhase_ = 0.f;
-        pumpPhase_ = 0.f;
-        crackHold_ = 0.f;
+        resetDspFlag.store(true, std::memory_order_relaxed);
+        triggerGlitchFlag.store(false, std::memory_order_relaxed);
+        triggerGranularFlag.store(false, std::memory_order_relaxed);
         micR_.store(0, std::memory_order_relaxed);
         micW_.store(0, std::memory_order_relaxed);
     }
@@ -87,6 +90,8 @@ public:
 
 private:
     float popMic_();
+    /** Aplica comandos vindos da UI somente dentro da thread de áudio. */
+    void applyDeferred_();
     void applyParams_();
 
     float sr_;
@@ -113,7 +118,7 @@ private:
     std::atomic<size_t> micW_{0}, micR_{0};
     std::vector<float> mixBuf_;
     std::atomic<float> meter_{0.f};
-    float motionPhase_ = 0.f, pumpPhase_ = 0.f, crackHold_ = 0.f, bpm_ = 138.f;
+    float motionPhase_ = 0.f, pumpPhase_ = 0.f, crackHold_ = 0.f;
     RNG crackRng_;
 
     WavWriter wav_;

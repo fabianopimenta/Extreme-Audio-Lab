@@ -114,11 +114,13 @@ object PresetRepository {
             ),
             limiterThreshold = o.optDouble("limiterThreshold", -2.0).toFloat(),
             masterGain = o.optDouble("masterGain", 0.7).toFloat(),
-            motionDepth = o.optDouble("motionDepth", 0.55).toFloat(),
+            motionDepth = o.optDouble("motionDepth", 0.35).toFloat(),
             motionRate = o.optDouble("motionRate", 0.60).toFloat(),
-            saturation = o.optDouble("saturation", 0.45).toFloat(),
-            intensity = o.optDouble("intensity", 0.80).toFloat(),
-            pump = o.optDouble("pump", 0.40).toFloat(),
+            saturation = o.optDouble("saturation", 0.35).toFloat(),
+            // Presets que não declaram intensidade ficam "solo" — o personagem
+            // do preset aparece sem a parede de ruído global por cima.
+            intensity = o.optDouble("intensity", 0.30).toFloat(),
+            pump = o.optDouble("pump", 0.15).toFloat(),
         )
     }
 }

@@ -8,6 +8,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.extremeaudiolab.ui.ExtremeAudioApp
 
 class MainActivity : ComponentActivity() {
@@ -23,6 +24,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Android 15 força edge-to-edge quando targetSdk = 35; optamos por não
+        // desenhar embaixo da barra de navegação para os 4 botões não sumirem.
+        WindowCompat.setDecorFitsSystemWindows(window, true)
         val missing = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }

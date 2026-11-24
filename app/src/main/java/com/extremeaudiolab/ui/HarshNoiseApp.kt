@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -138,8 +140,9 @@ fun ExtremeAudioApp() {
                     Row(
                         Modifier
                             .fillMaxWidth()
-                            .background(LabColors.Surface)
-                            .padding(5.dp),
+                            .navigationBarsPadding()
+                            .background(Brush.verticalGradient(listOf(LabColors.Surface2, LabColors.Surface)))
+                            .padding(horizontal = 5.dp, vertical = 7.dp),
                     ) {
                         tabs.forEachIndexed { i, (label, icon, color) ->
                             val selected = tab == i
@@ -212,38 +215,66 @@ fun ExtremeAudioApp() {
     }
 }
 
-/** Caixa do rack: laterais de madeira escura, trilhos com parafusos e o painel central. */
+/** Caixa do rack: o case inteiro aparece, com orelhas de madeira e trilhos de metal. */
 @Composable
 private fun RackFrame(content: @Composable () -> Unit) {
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(
-                Brush.horizontalGradient(
-                    listOf(LabColors.Wood, LabColors.Background, LabColors.Background, LabColors.Wood),
-                ),
-            )
-            .padding(horizontal = 4.dp),
-    ) {
-        Column(Modifier.fillMaxSize()) {
+    Row(Modifier.fillMaxSize().background(LabColors.Background)) {
+        RackEar()
+        Column(Modifier.weight(1f).fillMaxHeight()) {
             RackRail()
             Box(Modifier.weight(1f).fillMaxWidth()) { content() }
             RackRail()
+        }
+        RackEar()
+    }
+}
+
+/** Laterais visíveis do case, com parafusos como num rack eurorack real. */
+@Composable
+private fun RackEar() {
+    Box(
+        Modifier
+            .fillMaxHeight()
+            .width(18.dp)
+            .background(
+                Brush.horizontalGradient(
+                    listOf(Color(0xFF100B08), LabColors.Wood, Color(0xFF3A2618), Color(0xFF0E0A07)),
+                ),
+            ),
+    ) {
+        Column(
+            Modifier
+                .fillMaxHeight()
+                .padding(vertical = 12.dp),
+            verticalArrangement = Arrangement.SpaceEvenly,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            repeat(7) { Screw(8.dp) }
         }
     }
 }
 
 @Composable
 private fun RackRail() {
-    Row(
+    Column(
         Modifier
             .fillMaxWidth()
-            .height(13.dp)
-            .background(Brush.verticalGradient(listOf(LabColors.Rail, Color(0xFF22272C)))),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceEvenly,
+            .height(24.dp)
+            .background(Brush.verticalGradient(listOf(Color(0xFF6B747C), LabColors.Rail, Color(0xFF1B2025)))),
     ) {
-        repeat(9) { Screw(9.dp) }
+        Row(
+            Modifier.fillMaxWidth().weight(1f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            repeat(9) { Screw(8.dp) }
+        }
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(EuroColors.Intellijel.copy(alpha = 0.55f)),
+        )
     }
 }
 

@@ -12,9 +12,10 @@ Package: `com.extremeaudiolab` · versão `0.5.0` (`versionCode 5`).
   `Mixer → Vocoder → Glitch → Granular → Modal Resonator → Hyper Fuzz → DOD Death Metal → Destruction Lab → Kaoss Chain → Breakdown duck → Respiração → Volume → Limiter transparente → Saturação opcional → saída/WAV/UDP`
 - **Dinâmica intensa**: **Intensidade** (empurra 6 módulos de uma vez), **Pump** (impacto sincronizado com o BPM), respiração lenta, estalos abrasivos, saturação final ajustável e limitador transparente. Os faders alteram o nível de verdade em vez de serem achatados por compressão constante.
 - **Mod Matrix**: LFO (sine/tri/square/S&H, 0,05–20 Hz) com destinos limitados a ruído, sub, synth e microfone.
-- **Presets**: 6 patches em `app/src/main/assets/patches/default.json`, incluindo **PULSE DEMON / Parede** (referência Merzbow) e os 5 Transformers, com disparo manual de **glitch** e **grãos**.
+- **Presets**: 6 patches em `app/src/main/assets/patches/default.json`: **PULSE DEMON / Parede** (parede de ruído branco, referência Merzbow) e 5 Transformers em modo **solo** (vocoder do Prime, ring mod do Starscream, granular reverso da Transformation, glitch do Corrupted e ressonador do Servo), com disparo manual de **glitch** e **grãos**.
 - **Kaoss Pad virtual**: XY pad, 8 programas, latch (corrigido: arrastar nunca troca o efeito nem destrava) e mix.
-- **Interface eurorack**: case com trilhos e parafusos, painéis coloridos inspirados em Make Noise, Intellijel, Mutable, Buchla, Doepfer e Erica, faders com visor, escala e ajuda **?** em linguagem simples.
+- **Interface eurorack**: case com orelhas de madeira, trilhos metálicos e parafusos visíveis, painéis coloridos inspirados em Make Noise, Intellijel, Mutable, Buchla, Doepfer e Erica, faders com visor, escala e ajuda **?** em linguagem simples. Os 4 botões inferiores ficam acima da barra de navegação do Android.
+- **Estabilidade**: nenhum comando da UI toca o DSP diretamente — tempo, Kaoss, disparos e reset passam por estados atômicos aplicados dentro do callback de áudio; saída com proteção contra NaN.
 - **Gravação** WAV PCM 16-bit com exportação via MediaStore/Compartilhar.
 - **Transmissão offline** Android → Android por UDP (Wi-Fi Direct/hotspot), com modo Receiver no mesmo APK; também compartilhamento do WAV.
 - **100% offline em runtime**: sem analytics, ads ou chamadas externas. `INTERNET`/Wi-Fi são usados apenas para sockets locais.
@@ -28,18 +29,20 @@ Package: `com.extremeaudiolab` · versão `0.5.0` (`versionCode 5`).
 | DSP nativo (todos os módulos acima) | implementado |
 | UI Compose (Patch, Seq, Kaoss, Stream) | implementado |
 | Presets (6 patches) + JSON validado | implementado |
-| CI GitHub Actions (4 ABIs) | ✅ validado — APK gerado em 24/11/2026 (runs #6 e #8) |
+| CI GitHub Actions (4 ABIs) | ✅ validado — APK gerado em 24/11/2026 (runs #6, #8, #9 e #10) |
 | UI com ajuda integrada e faders logarítmicos | ✅ implementado |
-| Visual eurorack + nome PMNT NOISE LAB | ✅ implementado (validar no CI) |
+| Visual eurorack + nome PMNT NOISE LAB | ✅ implementado (run #10) |
+| Correção de fechamentos ao trocar preset/fader | ✅ implementado (validar no CI) |
 | Build/execução em dispositivo | pendente (instalar o APK e testar) |
 
 ## Como usar em 30 segundos
 
 1. Abra **Patch** → toque em **Presets** → escolha **PULSE DEMON / Parede** para o som mais extremo.
 2. Baixe o volume do celular **antes** de testar.
-3. Mexa em **Intensidade**, **Pump** e **Movimento** — são os faders que mais transformam o som.
-4. Toque no **?** ao lado de qualquer fader para ler o que ele faz em linguagem simples.
-5. Em **Kaoss**, arraste o dedo; **Travar posição** congela o ponto e trocar o efeito mantém a escolha. Em **Seq**, toque nos quadrados para montar a batida (o Pump acompanha o BPM).
+3. Mexa em **Intensidade**, **Pump** e **Movimento** — são os faders que mais transformam o som. Se o som ficar agudo demais, baixe **Pump** e **Intensidade** antes de mexer em mais nada.
+4. Para ouvir cada Transformer, escolha um deles em **Presets**: os efeitos secundários foram baixados de propósito para o "personagem" aparecer.
+5. Toque no **?** ao lado de qualquer fader para ler o que ele faz em linguagem simples.
+6. Em **Kaoss**, arraste o dedo; **Travar posição** congela o ponto e trocar o efeito mantém a escolha. Em **Seq**, toque nos quadrados para montar a batida (o Pump acompanha o BPM).
 
 ## Estrutura
 

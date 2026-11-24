@@ -5,6 +5,8 @@
 namespace hn {
 
 void AudioEngine::setParam(const std::string& module, const std::string& param, float v) {
+    // Um valor inválido vindo da UI nunca deve entrar no motor de áudio.
+    if (!std::isfinite(v)) return;
     if (module == "noise") {
         if (param == "type") p_.noiseType = v;
         else if (param == "level") p_.noiseLevel = v;
@@ -59,7 +61,9 @@ void AudioEngine::setParam(const std::string& module, const std::string& param, 
         else if (param == "q") p_.vocQ = v;
         else if (param == "mix") p_.vocMix = v;
     } else if (module == "destruction") {
-        if (param == "mode") { p_.destMode = v; destruction_.reset(); }
+        // O reset por mudança de modo é feito pelo próprio DestructionLab,
+        // dentro de setParams(), na thread de áudio. Nunca tocar no DSP da UI.
+        if (param == "mode") p_.destMode = v;
         else if (param == "drive") p_.destDrive = v;
         else if (param == "wet") p_.destWet = v;
     } else if (module == "mod") {
@@ -94,22 +98,28 @@ void AudioEngine::setStep(int i, bool on, int voice, float pitch, float velocity
 }
 
 void AudioEngine::setTempo(float bpm, float swing) {
-    bpm_ = clamp(bpm, 20.f, 400.f);
-    drums_.setTempo(bpm, swing);
+    // Nada de chamar drums_.setTempo() aqui: esta função roda na thread da UI.
+    if (!std::isfinite(bpm) || !std::isfinite(swing)) return;
+    p_.bpm.store(clamp(bpm, 20.f, 400.f), std::memory_order_relaxed);
+    p_.swing.store(clamp(swing, 0.f, 0.6f), std::memory_order_relaxed);
 }
 
 void AudioEngine::setKaoss(int program, float x, float y, bool latch, float mix) {
-    kaoss_.setParams(program, x, y, latch, mix);
+    // A UI manda o estado completo; applyDeferred_() repassa ao DSP no áudio.
+    if (!std::isfinite(x) || !std::isfinite(y) || !std::isfinite(mix)) return;
+    p_.kaossProgram.store(clamp(program, 0, 7), std::memory_order_relaxed);
+    p_.kaossX.store(clamp(x, 0.f, 1.f), std::memory_order_relaxed);
+    p_.kaossY.store(clamp(y, 0.f, 1.f), std::memory_order_relaxed);
+    p_.kaossLatch.store(latch, std::memory_order_relaxed);
+    p_.kaossMix.store(clamp(mix, 0.f, 1.f), std::memory_order_relaxed);
 }
 
 void AudioEngine::triggerGlitch() {
-    glitch_.trigger();
-    modal_.excite(1.2f);
+    p_.triggerGlitchFlag.store(true, std::memory_order_relaxed);
 }
 
 void AudioEngine::triggerGranular() {
-    granular_.trigger();
-    modal_.excite(0.8f);
+    p_.triggerGranularFlag.store(true, std::memory_order_relaxed);
 }
 
 void AudioEngine::pushMic(float s) {
@@ -126,7 +136,38 @@ float AudioEngine::popMic_() {
     return s;
 }
 
+void AudioEngine::applyDeferred_() {
+    // Reset pedido ao iniciar/reiniciar o motor.
+    if (p_.resetDspFlag.exchange(false, std::memory_order_relaxed)) {
+        mod_.reset();
+        tones_.reset();
+        destruction_.reset();
+        motionPhase_ = 0.f;
+        pumpPhase_ = 0.f;
+        crackHold_ = 0.f;
+    }
+    // Tempo e Kaoss antes eram escritos direto da thread da UI — corrida de dados.
+    drums_.setTempo(p_.bpm.load(std::memory_order_relaxed),
+                    p_.swing.load(std::memory_order_relaxed));
+    kaoss_.setParams(
+        (int)p_.kaossProgram.load(std::memory_order_relaxed),
+        p_.kaossX.load(std::memory_order_relaxed),
+        p_.kaossY.load(std::memory_order_relaxed),
+        p_.kaossLatch.load(std::memory_order_relaxed),
+        p_.kaossMix.load(std::memory_order_relaxed));
+    // Disparos manuais viram eventos únicos, aplicados aqui no callback.
+    if (p_.triggerGlitchFlag.exchange(false, std::memory_order_relaxed)) {
+        glitch_.trigger();
+        modal_.excite(0.9f);
+    }
+    if (p_.triggerGranularFlag.exchange(false, std::memory_order_relaxed)) {
+        granular_.trigger();
+        modal_.excite(0.6f);
+    }
+}
+
 void AudioEngine::applyParams_() {
+    applyDeferred_();
     // O fader Intensidade empurra vários módulos ao mesmo tempo: é o controle
     // "geral" que transforma um som contido em uma parede de ruído abrasiva.
     const float it = clamp(p_.intensity.load(), 0.f, 1.f);
@@ -175,7 +216,8 @@ void AudioEngine::render(float* out, int frames, int channels) {
     const float motionInc = 6.2831853f * clamp(p_.motionRate.load(), 0.05f, 4.f) / sr_;
     const float sat = clamp(p_.saturation.load(), 0.f, 1.f);
     const float pumpAmt = clamp(p_.pump.load(), 0.f, 1.f);
-    const float beatInc = 6.2831853f * (bpm_ / 60.f) * 2.f / sr_;
+    const float beatInc = 6.2831853f *
+        (p_.bpm.load(std::memory_order_relaxed) / 60.f) * 2.f / sr_;
     for (int i = 0; i < frames; ++i) {
         // Respiração global: dois LFOs lentos dão vida ao som mesmo sem tocar nos faders.
         motionPhase_ += motionInc;
@@ -189,10 +231,10 @@ void AudioEngine::render(float* out, int frames, int channels) {
         const float pumpEnv = std::pow(0.5f + 0.5f * std::cos(pumpPhase_), 4.f);
         const float pumpGain = 1.f + pumpAmt * pumpEnv * 1.4f;
 
-        // Estalos abrasivos (referencia: Merzbow / Pulse Demon): impulsos curtos e aleatorios.
+        // Estalos abrasivos (referência: Pulse Demon): esporádicos, não uma chuva contínua.
         float crack = 0.f;
-        if (crackHold_ <= 0.f && crackRng_.next() > 0.9993f - it * 0.004f) {
-            crackHold_ = (crackRng_.next() * 0.4f + 0.15f) * 0.001f * sr_;
+        if (crackHold_ <= 0.f && crackRng_.next() > 0.99985f - it * 0.001f) {
+            crackHold_ = (crackRng_.next() * 0.25f + 0.08f) * 0.001f * sr_;
         }
         if (crackHold_ > 0.f) { crack = crackRng_.next(); crackHold_ -= 1.f; }
 
@@ -214,7 +256,7 @@ void AudioEngine::render(float* out, int frames, int channels) {
 
         // Ruído, vozes e estalos ganham presença para que os faders sejam ouvidos.
         float mix = noise * 1.05f + micOut * 0.90f + drum * 0.85f + tone * 0.90f
-                    + crack * (0.10f + it * 0.45f);
+                    + crack * (0.06f + it * 0.26f);
         // O vocoder usa o microfone como modulador e o ruído como portadora.
         float voiced = vocoder_.process(mic, noise);
         float src = lerp(mix, voiced, p_.vocMix.load());
@@ -238,7 +280,9 @@ void AudioEngine::render(float* out, int frames, int channels) {
         }
 
         for (int c = 0; c < channels; ++c) {
-            float v = x;
+            // Última rede de segurança: um NaN nunca deve chegar ao Oboe.
+            if (!std::isfinite(x)) x = 0.f;
+            float v = clamp(x, -1.f, 1.f);
             out[i * channels + c] = v;
             mixBuf_[i * channels + c] = v;
             sumSq += v * v;

@@ -88,9 +88,9 @@ data class Patch(
     val limiterThreshold: Float = -2f,
     val masterGain: Float = 0.7f,
     // Dinâmica: movimento lento (respiração), saturação, intensidade e pump.
-    val motionDepth: Float = 0.55f,
+    val motionDepth: Float = 0.50f,
     val motionRate: Float = 0.60f,
-    val saturation: Float = 0.45f,
-    val intensity: Float = 0.80f,
-    val pump: Float = 0.40f,
+    val saturation: Float = 0.40f,
+    val intensity: Float = 0.65f,
+    val pump: Float = 0.25f,
 )

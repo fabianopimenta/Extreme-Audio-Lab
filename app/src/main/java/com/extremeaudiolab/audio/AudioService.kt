@@ -63,7 +63,7 @@ class AudioService : Service() {
 
     private fun createChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
-            val ch = NotificationChannel(CHANNEL_ID, "Extreme Audio Engine", NotificationManager.IMPORTANCE_LOW)
+            val ch = NotificationChannel(CHANNEL_ID, "PMNT Noise Lab — motor de áudio", NotificationManager.IMPORTANCE_LOW)
             getSystemService(NotificationManager::class.java).createNotificationChannel(ch)
         }
     }
