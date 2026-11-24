@@ -12,7 +12,7 @@
                                                                                         │
                                                                    [Breakdown duck] <──┘
                                                                            │
-                                                                      [Limiter] ─> ┬─> Oboe out
+                                                                      [Respiração LFO] ─> [Volume] ─> [Limiter transparente] ─> [Saturação opcional] ─> ┬─> Oboe out
                                                                                    ├─> WAV writer
                                                                                    └─> UDP sender
 
@@ -41,7 +41,7 @@
 
 - Sem dependências de rede externa em runtime.
 - `INTERNET` apenas para `DatagramSocket` local (Wi-Fi Direct/hotspot).
-- Limiter obrigatório no fim da cadeia; ganho de feedback limitado por software.
+- Limitador transparente após o volume; saturação final opcional; ganho de feedback limitado por software. O botão KILL zera volume, microfone e efeitos.
 - CI GitHub Actions compila as 4 ABIs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`).
 
 ## Permissões

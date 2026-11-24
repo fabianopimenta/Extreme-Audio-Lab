@@ -8,11 +8,13 @@
 - ✅ Fusão com Extreme Audio Lab: `DestructionLab`, `ModMatrix`, `SubSynth`, 6 vozes de bateria, CI com 4 ABIs, kill switch e `resetDspState()`.
 - ✅ CI validado em 24/11/2026: artefato `ExtremeAudioLab-debug-v0.5.0` gerado (run #6), com as 4 ABIs.
 - ✅ Correções de build: `GlitchProcessor::rate_` (variável inexistente), `Vocoder::formants_.size()` (array C) e `android-actions/setup-android@v3` (pacote `tools` descontinuado) substituído por instalação direta via `sdkmanager`.
+- ✅ Dinâmica sonora (run #8): LFO de respiração global, saturação final opcional, limitador transparente e volume antes do teto — os faders passaram a alterar o nível de verdade.
+- ✅ UX: faders logarítmicos para frequência/tempo, valor sempre visível e botão **?** com explicação em linguagem simples em todos os controles; guia rápido no topo; tema visual laranja/escuro com cartões, medidor e Kaoss pad com grade.
 
 ## Prioridade alta
 1. **Validar em dispositivo real** (o APK já compila no CI): latência Oboe, permissões de microfone e estabilidade do Feedback/Destruction Lab.
 2. **Identificar os módulos da foto**: preciso de uma imagem do rack em maior resolução/recorte dos painéis. O mapa funcional já está em `ANALYSIS.md`, mas os nomes de fabricante não foram legíveis.
-3. **Segurança auditiva**: confirmar que o limiter atua mesmo com `micGain=0.95` e `masterGain=1.0`; adicionar "panic button" que zera ganhos.
+3. **Segurança auditiva**: confirmar em dispositivo que o limitador atua com `micGain=0.95`, `masterGain=1.0` e saturação no máximo; o "panic button" (KILL) já zera volume, microfone e efeitos.
 4. **Fallback de áudio**: se `AAudio` falhar, forçar `OpenSL ES`; se microfone exclusivo falhar, abrir em `SharingMode::Shared`.
 
 ## Funcionalidades
