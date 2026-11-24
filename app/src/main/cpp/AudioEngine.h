@@ -72,9 +72,9 @@ public:
     void triggerGranular();
     /** Só sinaliza; o reset real acontece na thread de áudio, no primeiro render. */
     void resetDspState() {
-        resetDspFlag.store(true, std::memory_order_relaxed);
-        triggerGlitchFlag.store(false, std::memory_order_relaxed);
-        triggerGranularFlag.store(false, std::memory_order_relaxed);
+        p_.resetDspFlag.store(true, std::memory_order_relaxed);
+        p_.triggerGlitchFlag.store(false, std::memory_order_relaxed);
+        p_.triggerGranularFlag.store(false, std::memory_order_relaxed);
         micR_.store(0, std::memory_order_relaxed);
         micW_.store(0, std::memory_order_relaxed);
     }
