@@ -29,9 +29,9 @@ Package: `com.extremeaudiolab` · versão `0.5.0` (`versionCode 5`).
 | DSP nativo (todos os módulos acima) | implementado |
 | UI Compose (Patch, Seq, Kaoss, Stream) | implementado |
 | Presets (6 patches) + JSON validado | implementado |
-| CI GitHub Actions (4 ABIs) | ✅ validado — APK gerado em 24/11/2026 (runs #6, #8, #9 e #10) |
+| CI GitHub Actions (4 ABIs) | ✅ validado — APK gerado em 24/11/2026 (runs #6, #8, #9, #10 e #12) |
 | UI com ajuda integrada e faders logarítmicos | ✅ implementado |
-| Visual eurorack + nome PMNT NOISE LAB | ✅ implementado (run #10) |
+| Visual eurorack + nome PMNT NOISE LAB | ✅ implementado (run #12) |
 | Correção de fechamentos ao trocar preset/fader | ✅ implementado (validar no CI) |
 | Build/execução em dispositivo | pendente (instalar o APK e testar) |
 
