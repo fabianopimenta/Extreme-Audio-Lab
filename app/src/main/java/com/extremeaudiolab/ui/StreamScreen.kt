@@ -34,7 +34,7 @@ import java.io.File
 fun StreamScreen(patch: Patch, controller: AudioController) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
-    val dir = File(ctx.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "ExtremeAudioLab").also { it.mkdirs() }
+    val dir = File(ctx.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "PMNTNoiseLab").also { it.mkdirs() }
     var files by remember { mutableStateOf(dir.listFiles()?.toList().orEmpty()) }
     var recording by remember { mutableStateOf(false) }
     var host by remember { mutableStateOf("192.168.43.1") }
@@ -45,7 +45,7 @@ fun StreamScreen(patch: Patch, controller: AudioController) {
     var receiver by remember { mutableStateOf<StreamReceiver?>(null) }
 
     Column(Modifier.fillMaxSize().padding(12.dp)) {
-        SectionCard("Gravação WAV", "Salva o áudio no celular, sem internet.", "⏺") {
+        SectionCard("Gravação WAV", "Salva o áudio no celular, sem internet.", "⏺", EuroColors.Buchla) {
             ActionButton(
                 text = if (recording) "Parar gravação" else "Gravar WAV",
                 onClick = {
@@ -88,7 +88,12 @@ fun StreamScreen(patch: Patch, controller: AudioController) {
             }
         }
 
-        SectionCard("Stream P2P — som direto entre celulares", "Funciona na mesma rede Wi-Fi, sem servidor.", "📡") {
+        SectionCard(
+            "Stream P2P — som direto entre celulares",
+            "Funciona na mesma rede Wi-Fi, sem servidor.",
+            "📡",
+            EuroColors.Erica,
+        ) {
             Text(
                 "No celular que vai receber, ligue o Modo Receiver. No celular que vai enviar, digite o IP mostrado na rede e a mesma porta.",
                 style = MaterialTheme.typography.bodySmall,

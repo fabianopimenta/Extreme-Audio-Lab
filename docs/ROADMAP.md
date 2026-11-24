@@ -10,11 +10,14 @@
 - ✅ Correções de build: `GlitchProcessor::rate_` (variável inexistente), `Vocoder::formants_.size()` (array C) e `android-actions/setup-android@v3` (pacote `tools` descontinuado) substituído por instalação direta via `sdkmanager`.
 - ✅ Dinâmica sonora (run #8): LFO de respiração global, saturação final opcional, limitador transparente e volume antes do teto — os faders passaram a alterar o nível de verdade.
 - ✅ UX: faders logarítmicos para frequência/tempo, valor sempre visível e botão **?** com explicação em linguagem simples em todos os controles; guia rápido no topo; tema visual laranja/escuro com cartões, medidor e Kaoss pad com grade.
+- ✅ Identidade **PMNT NOISE LAB**: interface eurorack (case com trilhos/parafusos, painéis com cores Make Noise/Intellijel/Mutable/Buchla/Doepfer/Erica, visores e escalas nos faders).
+- ✅ Dinâmica extrema: fader **Intensidade** (6 módulos de uma vez), **Pump** sincronizado ao BPM, estalos abrasivos estilo *Pulse Demon*, defaults mais agressivos e preset **PULSE DEMON / Parede**.
+- ✅ Kaoss: latch confiável — arrastar usa sempre o estado atual, não reaplica programa antigo e não destrava o pad; travar congela x/y e trocar efeito preserva a escolha.
 
 ## Prioridade alta
 1. **Validar em dispositivo real** (o APK já compila no CI): latência Oboe, permissões de microfone e estabilidade do Feedback/Destruction Lab.
 2. **Identificar os módulos da foto**: preciso de uma imagem do rack em maior resolução/recorte dos painéis. O mapa funcional já está em `ANALYSIS.md`, mas os nomes de fabricante não foram legíveis.
-3. **Segurança auditiva**: confirmar em dispositivo que o limitador atua com `micGain=0.95`, `masterGain=1.0` e saturação no máximo; o "panic button" (KILL) já zera volume, microfone e efeitos.
+3. **Segurança auditiva**: confirmar em dispositivo que o limitador atua com `micGain=0.95`, `masterGain=1.0`, `intensity=1` e saturação no máximo; o "panic button" (KILL) já zera volume, microfone, intensidade, pump e efeitos.
 4. **Fallback de áudio**: se `AAudio` falhar, forçar `OpenSL ES`; se microfone exclusivo falhar, abrir em `SharingMode::Shared`.
 
 ## Funcionalidades

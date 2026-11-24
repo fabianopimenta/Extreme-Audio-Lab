@@ -19,7 +19,7 @@
     <application
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="EXTREME AUDIO LAB"
+        android:label="PMNT NOISE LAB"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ExtremeAudioLab">
@@ -32,7 +32,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="EXTREME AUDIO LAB"
+            android:label="PMNT NOISE LAB"
             android:theme="@style/Theme.ExtremeAudioLab">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

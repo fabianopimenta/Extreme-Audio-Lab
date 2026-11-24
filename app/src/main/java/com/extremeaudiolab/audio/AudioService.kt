@@ -76,7 +76,7 @@ class AudioService : Service() {
         }
         return builder
             .setSmallIcon(android.R.drawable.ic_media_play)
-            .setContentTitle("EXTREME AUDIO LAB")
+            .setContentTitle("PMNT NOISE LAB")
             .setContentText("Motor de áudio ativo — offline")
             .setOngoing(true)
             .build()

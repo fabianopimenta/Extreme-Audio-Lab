@@ -73,16 +73,14 @@ public:
           pitchA_(sr), pitchB_(sr), reverb_(sr) {}
 
     void setParams(int program, float x, float y, bool latch, float mix) {
+        // A UI é a fonte da verdade: quando latch está ligado ela congela x/y.
+        // Seguir sempre os valores recebidos evita que um arraste reaplique um
+        // programa antigo (closure velho) e destrave o pad por corrida de eventos.
         program_ = clamp(program, 0, 7);
+        x_ = clamp(x, 0.f, 1.f);
+        y_ = clamp(y, 0.f, 1.f);
         latch_ = latch;
-        if (latch_) {
-            // Congela o último valor quando latch está ligado; a UI já envia x/y travados.
-            if (!latched_) { lx_ = x; ly_ = y; latched_ = true; }
-            x_ = lx_; y_ = ly_;
-        } else {
-            latched_ = false; x_ = x; y_ = y;
-        }
-        mix_ = mix;
+        mix_ = clamp(mix, 0.f, 1.f);
     }
 
     float process(float in) {
@@ -150,7 +148,9 @@ public:
                 break;
             }
         }
-        return lerp(in, clamp(out, -1.5f, 1.5f), mix_);
+        // Com a posição travada o efeito fica um pouco mais presente.
+        const float m = clamp(mix_ * (latch_ ? 1.05f : 1.f), 0.f, 1.f);
+        return lerp(in, clamp(out, -1.5f, 1.5f), m);
     }
 
 private:
@@ -163,8 +163,7 @@ private:
     float sr_;
     int program_ = 0;
     float x_ = 0.5f, y_ = 0.5f, mix_ = 1.f;
-    bool latch_ = false, latched_ = false;
-    float lx_ = 0.5f, ly_ = 0.5f;
+    bool latch_ = false;
     float phase_ = 0.f, phase2_ = 0.f, ringPhase_ = 0.f;
     float crack_ = 0.f;
     RNG rng_;

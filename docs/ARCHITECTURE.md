@@ -12,7 +12,7 @@
                                                                                         │
                                                                    [Breakdown duck] <──┘
                                                                            │
-                                                                      [Respiração LFO] ─> [Volume] ─> [Limiter transparente] ─> [Saturação opcional] ─> ┬─> Oboe out
+                                                                      [Crackle] ─> [Respiração LFO + Pump BPM] ─> [Volume] ─> [Limiter transparente] ─> [Saturação opcional] ─> ┬─> Oboe out
                                                                                    ├─> WAV writer
                                                                                    └─> UDP sender
 
@@ -28,7 +28,7 @@
   - `SubSynth`: Sub Bass (10–200 Hz) e Synth (30–1200 Hz), 4 formas de onda, nível default 0 para preservar o patch da amostra.
   - `DrumSequencer`: 6 vozes (kick, snare, hat, tom, industrial hit, noise burst).
 - **Reset de estado**: `AudioEngine::resetDspState()` é chamado em `nativeStart` para zerar LFO, voices e ring buffer do microfone.
-- **Kaoss**: `latch` corrigido — o valor recebido é agora aplicado ao estado do pad.
+- **Kaoss**: `latch` corrigido nas duas camadas — a UI congela x/y e usa sempre o estado atual (sem closure velho), e o C++ segue os valores recebidos. Arrastar nunca troca o programa nem destrava o pad.
 - **Gravação/stream**: a thread de áudio escreve no `WavWriter` e no `UdpSender` pré-alocados, sem alocação por amostra.
 
 ## Latência
@@ -41,7 +41,7 @@
 
 - Sem dependências de rede externa em runtime.
 - `INTERNET` apenas para `DatagramSocket` local (Wi-Fi Direct/hotspot).
-- Limitador transparente após o volume; saturação final opcional; ganho de feedback limitado por software. O botão KILL zera volume, microfone e efeitos.
+- Limitador transparente após o volume; saturação final opcional; ganho de feedback limitado por software. O botão KILL zera volume, microfone, intensidade, pump e efeitos.
 - CI GitHub Actions compila as 4 ABIs (`arm64-v8a`, `armeabi-v7a`, `x86`, `x86_64`).
 
 ## Permissões

@@ -15,7 +15,7 @@ object Recorder {
         val values = ContentValues().apply {
             put(MediaStore.Audio.Media.DISPLAY_NAME, file.name)
             put(MediaStore.Audio.Media.MIME_TYPE, "audio/wav")
-            put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/ExtremeAudioLab")
+            put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/PMNTNoiseLab")
             put(MediaStore.Audio.Media.IS_PENDING, 1)
         }
         val uri = context.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
@@ -30,7 +30,7 @@ object Recorder {
     } else {
         val dest = File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),
-            "ExtremeAudioLab/${file.name}",
+            "PMNTNoiseLab/${file.name}",
         )
         dest.parentFile?.mkdirs()
         file.copyTo(dest, overwrite = true)

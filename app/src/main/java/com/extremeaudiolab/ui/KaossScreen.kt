@@ -15,8 +15,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -44,15 +47,20 @@ private val programs = listOf(
 @Composable
 fun KaossScreen(patch: Patch, update: (Patch) -> Unit, controller: AudioController) {
     val k = patch.kaoss
+    // Estado sempre atual: um arraste nunca deve reaplicar um programa antigo.
+    val currentK by rememberUpdatedState(k)
+    val currentPatch by rememberUpdatedState(patch)
+    val currentUpdate by rememberUpdatedState(update)
 
-    Column(Modifier.fillMaxSize().padding(12.dp)) {
+    Column(Modifier.fillMaxSize().padding(10.dp)) {
         SectionCard(
             title = "Kaoss Pad — ${programs[k.program].name}",
             subtitle = programs[k.program].hint,
             icon = "☯",
+            accent = EuroColors.Mutable,
         ) {
             Text(
-                "Arraste o dedo pela área abaixo. Para a esquerda/em baixo = menos efeito; para a direita/em cima = mais.",
+                "Arraste o dedo pela área abaixo. Esquerda/baixo = menos efeito; direita/cima = mais.",
                 style = MaterialTheme.typography.bodySmall,
                 color = LabColors.TextMuted,
             )
@@ -61,21 +69,24 @@ fun KaossScreen(patch: Patch, update: (Patch) -> Unit, controller: AudioControll
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(300.dp)
-                    .clip(RoundedCornerShape(16.dp))
+                    .height(280.dp)
+                    .clip(RoundedCornerShape(4.dp))
                     .background(LabColors.Surface2)
-                    .pointerInput(k.latch) {
+                    .pointerInput(Unit) {
                         detectDragGestures { change, _ ->
+                            val state = currentK
+                            // Travado: o arraste não altera x/y nem o efeito selecionado.
+                            if (state.latch) return@detectDragGestures
                             val x = (change.position.x / size.width).coerceIn(0f, 1f)
                             val y = (change.position.y / size.height).coerceIn(0f, 1f)
-                            val next = k.copy(x = x, y = y)
-                            update(patch.copy(kaoss = next))
+                            val next = state.copy(x = x, y = y)
+                            currentUpdate(currentPatch.copy(kaoss = next))
                             controller.setKaoss(next.program, next.x, next.y, next.latch, next.mix)
                         }
                     },
             ) {
                 Canvas(Modifier.matchParentSize()) {
-                    val line = LabColors.Track.copy(alpha = 0.7f)
+                    val line = LabColors.Track.copy(alpha = 0.75f)
                     for (i in 1..7) {
                         val gx = size.width * i / 8f
                         val gy = size.height * i / 8f
@@ -84,32 +95,39 @@ fun KaossScreen(patch: Patch, update: (Patch) -> Unit, controller: AudioControll
                     }
                     val cx = size.width * k.x
                     val cy = size.height * k.y
+                    val point = if (k.latch) EuroColors.Buchla else EuroColors.Mutable
                     drawLine(
-                        LabColors.Accent.copy(alpha = 0.35f),
+                        point.copy(alpha = 0.35f),
                         Offset(cx, 0f), Offset(cx, size.height), 1.5.dp.toPx(),
+                        cap = StrokeCap.Round,
                     )
                     drawLine(
-                        LabColors.Accent.copy(alpha = 0.35f),
+                        point.copy(alpha = 0.35f),
                         Offset(0f, cy), Offset(size.width, cy), 1.5.dp.toPx(),
+                        cap = StrokeCap.Round,
                     )
-                    drawCircle(LabColors.Accent.copy(alpha = 0.18f), 26.dp.toPx(), Offset(cx, cy))
-                    drawCircle(LabColors.Accent, 9.dp.toPx(), Offset(cx, cy))
+                    drawCircle(point.copy(alpha = 0.18f), 26.dp.toPx(), Offset(cx, cy))
+                    drawCircle(point, 9.dp.toPx(), Offset(cx, cy))
                 }
                 Text(
                     "EM CIMA = MAIS",
                     color = LabColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 8.dp),
+                    modifier = Modifier.align(Alignment.TopCenter).padding(top = 7.dp),
                 )
                 Text(
                     "EM BAIXO = MENOS",
                     color = LabColors.TextMuted,
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp),
+                    modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 7.dp),
                 )
                 Text(
-                    "X ${(k.x * 100).toInt()}%   Y ${(k.y * 100).toInt()}%",
-                    color = LabColors.Text,
+                    if (k.latch) {
+                        "🔒 TRAVADO — X ${(k.x * 100).toInt()}%  Y ${(k.y * 100).toInt()}%"
+                    } else {
+                        "X ${(k.x * 100).toInt()}%   Y ${(k.y * 100).toInt()}%"
+                    },
+                    color = if (k.latch) EuroColors.Buchla else LabColors.Text,
                     fontSize = 12.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.align(Alignment.Center).padding(top = 34.dp),
@@ -117,7 +135,7 @@ fun KaossScreen(patch: Patch, update: (Patch) -> Unit, controller: AudioControll
             }
 
             Spacer(Modifier.height(10.dp))
-            Text("Escolha o efeito:", style = MaterialTheme.typography.labelLarge, color = LabColors.Text)
+            Text("ESCOLHA O EFEITO:", style = MaterialTheme.typography.labelLarge, color = LabColors.Text)
             Spacer(Modifier.height(4.dp))
             Segmented(programs.map { it.name }, k.program) { i ->
                 val next = k.copy(program = i)
@@ -127,23 +145,34 @@ fun KaossScreen(patch: Patch, update: (Patch) -> Unit, controller: AudioControll
 
             Spacer(Modifier.height(10.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Switch(checked = k.latch, onCheckedChange = {
-                    val next = k.copy(latch = it)
-                    update(patch.copy(kaoss = next))
-                    controller.setKaoss(next.program, next.x, next.y, next.latch, next.mix)
-                })
-                Text(" Travar posição", color = LabColors.Text)
+                Switch(
+                    checked = k.latch,
+                    onCheckedChange = { on ->
+                        val next = k.copy(latch = on)
+                        update(patch.copy(kaoss = next))
+                        controller.setKaoss(next.program, next.x, next.y, next.latch, next.mix)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = EuroColors.Mutable,
+                        checkedTrackColor = EuroColors.Mutable.copy(alpha = 0.5f),
+                    ),
+                )
+                Text(" TRAVAR POSIÇÃO", color = LabColors.Text)
             }
             Text(
-                "Travar mantém o ponto escolhido mesmo se você tirar o dedo.",
+                if (k.latch) {
+                    "Posição travada: arrastar não muda nada. Destrave para mover o ponto."
+                } else {
+                    "Ao travar, o ponto fica parado. Trocar o efeito nunca apaga a sua escolha."
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = LabColors.TextMuted,
             )
             Fader(
-                "Força do efeito", k.mix, 0f..1f,
+                "FORÇA DO EFEITO", k.mix, 0f..1f,
                 {
-                    val next = k.copy(mix = it)
-                    update(patch.copy(kaoss = next))
+                    val next = currentK.copy(mix = it)
+                    currentUpdate(currentPatch.copy(kaoss = next))
                     controller.setKaoss(next.program, next.x, next.y, next.latch, next.mix)
                 },
                 description = "Quanto do efeito Kaoss entra na mistura. Em 0 o pad fica desligado.",

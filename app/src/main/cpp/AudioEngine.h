@@ -44,7 +44,9 @@ struct Params {
     std::atomic<float> synthFreq{110.f}, synthLevel{0.f}, synthWave{3};
     std::atomic<float> threshold{-2.f}, masterGain{0.7f};
     // Respiração global (movimento lento) e cor final controlável pelo usuário.
-    std::atomic<float> motionDepth{0.30f}, motionRate{0.35f}, saturation{0.25f};
+    std::atomic<float> motionDepth{0.55f}, motionRate{0.60f}, saturation{0.45f};
+    // Intensidade global (controla 6 módulos de uma vez) e pump ritmico pelo BPM.
+    std::atomic<float> intensity{0.80f}, pump{0.40f};
 };
 
 class AudioEngine {
@@ -68,6 +70,8 @@ public:
         tones_.reset();
         destruction_.reset();
         motionPhase_ = 0.f;
+        pumpPhase_ = 0.f;
+        crackHold_ = 0.f;
         micR_.store(0, std::memory_order_relaxed);
         micW_.store(0, std::memory_order_relaxed);
     }
@@ -109,7 +113,8 @@ private:
     std::atomic<size_t> micW_{0}, micR_{0};
     std::vector<float> mixBuf_;
     std::atomic<float> meter_{0.f};
-    float motionPhase_ = 0.f;
+    float motionPhase_ = 0.f, pumpPhase_ = 0.f, crackHold_ = 0.f, bpm_ = 138.f;
+    RNG crackRng_;
 
     WavWriter wav_;
     UdpSender udp_;

@@ -82,6 +82,8 @@ void AudioEngine::setParam(const std::string& module, const std::string& param, 
         else if (param == "motion") p_.motionDepth = v;
         else if (param == "motionRate") p_.motionRate = v;
         else if (param == "saturation") p_.saturation = v;
+        else if (param == "intensity") p_.intensity = v;
+        else if (param == "pump") p_.pump = v;
     }
 }
 
@@ -91,7 +93,10 @@ void AudioEngine::setStep(int i, bool on, int voice, float pitch, float velocity
     steps_[i] = {on, voice, pitch, velocity, probability};
 }
 
-void AudioEngine::setTempo(float bpm, float swing) { drums_.setTempo(bpm, swing); }
+void AudioEngine::setTempo(float bpm, float swing) {
+    bpm_ = clamp(bpm, 20.f, 400.f);
+    drums_.setTempo(bpm, swing);
+}
 
 void AudioEngine::setKaoss(int program, float x, float y, bool latch, float mix) {
     kaoss_.setParams(program, x, y, latch, mix);
@@ -122,25 +127,34 @@ float AudioEngine::popMic_() {
 }
 
 void AudioEngine::applyParams_() {
-    noise_.setParams((int)p_.noiseType.load(), p_.noiseLevel.load(), p_.noiseCrush.load(),
-                     p_.noiseHold.load(), p_.noiseComb.load());
+    // O fader Intensidade empurra vários módulos ao mesmo tempo: é o controle
+    // "geral" que transforma um som contido em uma parede de ruído abrasiva.
+    const float it = clamp(p_.intensity.load(), 0.f, 1.f);
+    noise_.setParams((int)p_.noiseType.load(), p_.noiseLevel.load() * (0.35f + it * 1.45f),
+                     p_.noiseCrush.load() - it * 2.f, p_.noiseHold.load(),
+                     clamp(p_.noiseComb.load() + it * 0.25f, 0.f, 1.f));
     mic_.setParams(p_.micGain.load(), p_.micDelayMs.load(), p_.micTone.load(),
                    p_.micMix.load(), p_.micGate.load());
-    fuzz_.setParams(p_.fuzzDrive.load(), p_.fuzzOctave.load(), p_.fuzzGate.load(), p_.fuzzTone.load());
-    dod_.setParams(p_.dodGain.load(), p_.dodLowCut.load(), p_.dodScoop.load(),
-                   p_.dodPresence.load(), p_.dodGate.load());
+    fuzz_.setParams(clamp(p_.fuzzDrive.load() + it * 0.35f, 0.f, 1.f),
+                    p_.fuzzOctave.load(), p_.fuzzGate.load(), p_.fuzzTone.load());
+    dod_.setParams(clamp(p_.dodGain.load() + it * 0.35f, 0.f, 1.f), p_.dodLowCut.load(),
+                   p_.dodScoop.load(), p_.dodPresence.load(), p_.dodGate.load());
     glitch_.setParams((int)p_.glitchMode.load(), p_.glitchRate.load(), p_.glitchSize.load(),
-                      p_.glitchDecimate.load(), p_.glitchBits.load(), p_.glitchMix.load(),
-                      p_.glitchProbability.load(), p_.glitchGate.load());
+                      p_.glitchDecimate.load(), p_.glitchBits.load(),
+                      clamp(p_.glitchMix.load() + it * 0.30f, 0.f, 1.f),
+                      clamp(p_.glitchProbability.load() + it * 0.40f, 0.f, 1.f),
+                      p_.glitchGate.load());
     modal_.setParams(p_.modalTune.load(), p_.modalInharm.load(), p_.modalDecay.load(),
-                     p_.modalBright.load(), p_.modalMix.load());
+                     p_.modalBright.load(), clamp(p_.modalMix.load() + it * 0.20f, 0.f, 1.f));
     granular_.setParams((int)p_.granMode.load(), p_.granSize.load(), p_.granDensity.load(),
                         p_.granPitch.load(), p_.granSpread.load(), p_.granFeedback.load(),
                         p_.granMix.load());
     vocoder_.setParams(p_.vocPitch.load(), p_.vocShift.load(), p_.vocSpeed.load(),
                        p_.vocQ.load(), (int)p_.vocSource.load());
-    destruction_.setParams((int)p_.destMode.load(), p_.destDrive.load(), p_.destWet.load());
-    mod_.setParams(p_.modEnabled.load() > 0.5f, p_.modRate.load(), p_.modDepth.load(),
+    destruction_.setParams((int)p_.destMode.load(), p_.destDrive.load() * (1.f + it * 1.8f),
+                           clamp(p_.destWet.load() + it * 0.35f, 0.f, 1.f));
+    mod_.setParams(p_.modEnabled.load() > 0.5f, p_.modRate.load(),
+                   clamp(p_.modDepth.load() + it * 0.20f, 0.f, 1.f),
                    (int)p_.modDest.load(), (int)p_.modShape.load());
     tones_.setSub(p_.subFreq.load(), p_.subLevel.load(), (int)p_.subWave.load());
     tones_.setSynth(p_.synthFreq.load(), p_.synthLevel.load(), (int)p_.synthWave.load());
@@ -156,15 +170,31 @@ void AudioEngine::render(float* out, int frames, int channels) {
     if ((size_t)frames * channels > mixBuf_.size()) mixBuf_.resize((size_t)frames * channels * 2);
 
     float sumSq = 0.f, reduction = 0.f;
+    const float it = clamp(p_.intensity.load(), 0.f, 1.f);
     const float motionDepth = clamp(p_.motionDepth.load(), 0.f, 1.f);
     const float motionInc = 6.2831853f * clamp(p_.motionRate.load(), 0.05f, 4.f) / sr_;
     const float sat = clamp(p_.saturation.load(), 0.f, 1.f);
+    const float pumpAmt = clamp(p_.pump.load(), 0.f, 1.f);
+    const float beatInc = 6.2831853f * (bpm_ / 60.f) * 2.f / sr_;
     for (int i = 0; i < frames; ++i) {
         // Respiração global: dois LFOs lentos dão vida ao som mesmo sem tocar nos faders.
         motionPhase_ += motionInc;
         if (motionPhase_ >= 6.2831853f) motionPhase_ -= 6.2831853f;
         const float swell = std::sin(motionPhase_) * motionDepth;
         const float shimmer = std::sin(motionPhase_ * 2.7f + 0.8f) * motionDepth;
+
+        // Pump ritmico: pulsos curtos sincronizados com o BPM (oitavos) dão impacto.
+        pumpPhase_ += beatInc;
+        if (pumpPhase_ >= 6.2831853f) pumpPhase_ -= 6.2831853f;
+        const float pumpEnv = std::pow(0.5f + 0.5f * std::cos(pumpPhase_), 4.f);
+        const float pumpGain = 1.f + pumpAmt * pumpEnv * 1.4f;
+
+        // Estalos abrasivos (referencia: Merzbow / Pulse Demon): impulsos curtos e aleatorios.
+        float crack = 0.f;
+        if (crackHold_ <= 0.f && crackRng_.next() > 0.9993f - it * 0.004f) {
+            crackHold_ = (crackRng_.next() * 0.4f + 0.15f) * 0.001f * sr_;
+        }
+        if (crackHold_ > 0.f) { crack = crackRng_.next(); crackHold_ -= 1.f; }
 
         // Mod Matrix: escalas limitadas, sem alterar os átomos base.
         const float lfo = mod_.next(sr_);
@@ -182,8 +212,9 @@ void AudioEngine::render(float* out, int frames, int channels) {
         float drum = drums_.process(noise);
         float tone = tones_.process(sr_, subScale, synthScale);
 
-        // Ruído e vozes tonais ganham presença para que seus faders sejam ouvidos.
-        float mix = noise * 0.95f + micOut * 0.90f + drum * 0.85f + tone * 0.90f;
+        // Ruído, vozes e estalos ganham presença para que os faders sejam ouvidos.
+        float mix = noise * 1.05f + micOut * 0.90f + drum * 0.85f + tone * 0.90f
+                    + crack * (0.10f + it * 0.45f);
         // O vocoder usa o microfone como modulador e o ruído como portadora.
         float voiced = vocoder_.process(mic, noise);
         float src = lerp(mix, voiced, p_.vocMix.load());
@@ -196,7 +227,7 @@ void AudioEngine::render(float* out, int frames, int channels) {
         x = kaoss_.process(x);
         // Breakdown: o gate do glitch ducka a cadeia antes do limitador.
         x *= (1.f - glitch_.activity());
-        x *= (1.f + swell * 0.45f);
+        x *= (1.f + swell * 0.85f) * pumpGain;
         // Volume antes do limitador: o fader de volume agora altera o nível real.
         x *= p_.masterGain.load();
         x = limiter_.process(x, p_.threshold.load(), reduction);

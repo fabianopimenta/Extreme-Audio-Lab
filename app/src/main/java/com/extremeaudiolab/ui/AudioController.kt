@@ -107,6 +107,8 @@ class AudioController(private val context: Context) {
         s.setParam("master", "motion", patch.motionDepth)
         s.setParam("master", "motionRate", patch.motionRate)
         s.setParam("master", "saturation", patch.saturation)
+        s.setParam("master", "intensity", patch.intensity)
+        s.setParam("master", "pump", patch.pump)
         s.setKaoss(
             patch.kaoss.program, patch.kaoss.x, patch.kaoss.y,
             patch.kaoss.latch, patch.kaoss.mix,
