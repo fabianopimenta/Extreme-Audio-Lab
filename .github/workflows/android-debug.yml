@@ -1,1 +1,59 @@
+name: Android Debug APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+
+jobs:
+  build-debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build components
+        run: |
+          sdkmanager --install \
+            "platform-tools" \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "cmake;3.22.1" \
+            "ndk;27.0.12077973"
+
+      - name: Fetch Oboe (build-time only)
+        run: |
+          mkdir -p app/src/main/cpp/third_party
+          git clone --depth 1 https://github.com/google/oboe.git app/src/main/cpp/third_party/oboe
+
+      - name: Build debug APK
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Verify APK
+        run: |
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ExtremeAudioLab-debug-v0.5.0
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
