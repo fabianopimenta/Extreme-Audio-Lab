@@ -48,6 +48,9 @@ class AudioService : Service() {
     fun triggerGlitch() = engine.nativeTriggerGlitch(handle)
     fun triggerGranular() = engine.nativeTriggerGranular(handle)
 
+    fun loadSample(samples: FloatArray, fileSampleRate: Int): Boolean =
+        engine.nativeLoadSample(handle, samples, samples.size, fileSampleRate.toFloat())
+
     fun startRecording(path: String): Boolean = engine.nativeStartRecording(handle, path)
     fun stopRecording(): String? = engine.nativeStopRecording(handle)
     fun setStream(host: String, port: Int): Boolean = engine.nativeSetStream(handle, host, port)

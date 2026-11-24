@@ -22,6 +22,7 @@ class NativeEngine {
     )
     external fun nativeTriggerGlitch(handle: Long)
     external fun nativeTriggerGranular(handle: Long)
+    external fun nativeLoadSample(handle: Long, data: FloatArray, frames: Int, fileSampleRate: Float): Boolean
 
     external fun nativeStartRecording(handle: Long, path: String): Boolean
     external fun nativeStopRecording(handle: Long): String?

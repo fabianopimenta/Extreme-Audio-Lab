@@ -19,6 +19,7 @@
 #include "ModMatrix.h"
 #include "SubSynth.h"
 #include "Limiter.h"
+#include "Sampler.h"
 #include "WavWriter.h"
 #include "UdpSender.h"
 
@@ -53,6 +54,9 @@ struct Params {
     std::atomic<float> kaossProgram{0}, kaossX{0.5f}, kaossY{0.5f}, kaossMix{1.f};
     std::atomic<bool> kaossLatch{false};
     std::atomic<bool> resetDspFlag{true}, triggerGlitchFlag{false}, triggerGranularFlag{false};
+    // Amostra trazida pelo usuário: mix, afinação, ponto de início e loop.
+    std::atomic<float> sampleMix{0.f}, sampleTune{0.f}, sampleStart{0.f};
+    std::atomic<bool> sampleLoop{true}, triggerSampleFlag{false};
 };
 
 class AudioEngine {
@@ -62,6 +66,7 @@ public:
           glitch_(sr), modal_(sr), granular_(sr), vocoder_(sr),
           micBuf_(4096, 0.f), mixBuf_(1024 * 2, 0.f) {
         drums_.setTempo(138.f, 0.12f);
+        sampler_.setEngineRate(sr);
     }
 
     void setParam(const std::string& module, const std::string& param, float v);
@@ -81,6 +86,9 @@ public:
 
     void pushMic(float s);
     void render(float* out, int frames, int channels);
+
+    /** Copia a amostra para um buffer de espera; a troca real ocorre no áudio. */
+    bool loadSample(const float* data, int frames, float fileSr);
 
     bool startRecording(const std::string& path);
     std::string stopRecording();
@@ -110,6 +118,7 @@ private:
     ModMatrix mod_;
     SubSynth tones_;
     Limiter limiter_;
+    Sampler sampler_;
 
     std::array<StepData, 16> steps_;
     mutable std::mutex stepMutex_;
@@ -118,6 +127,12 @@ private:
     std::atomic<size_t> micW_{0}, micR_{0};
     std::vector<float> mixBuf_;
     std::atomic<float> meter_{0.f};
+
+    // Handoff da amostra: UI preenche `pendingSample_`, áudio faz o swap.
+    mutable std::mutex sampleMutex_;
+    std::vector<float> pendingSample_;
+    float pendingSampleSr_ = 48000.f;
+    bool samplePending_ = false;
     float motionPhase_ = 0.f, pumpPhase_ = 0.f, crackHold_ = 0.f;
     RNG crackRng_;
 

@@ -3,7 +3,7 @@
 ## Concluído
 - ✅ `GlitchProcessor` (stutter/reverse/freeze/decimate) + duck de breakdown.
 - ✅ `ModalResonator` (6 modos inarmônicos) com excitação automática e manual.
-- ✅ Presets Transformers (Prime, Starscream, Transformation, Corrupted Data, Servo) e botões de disparo na UI.
+- ✅ Presets de disparo na UI (glitch/grãos) e catálogo de presets genéricos: `PULSE DEMON / Parede`, `CAOS CONTROLADO` e `DRONE SUJO`. Os presets "Transformers" foram removidos a pedido do usuário.
 - ✅ `GranularEngine` (scatter/freeze/reverse/pitch-drop, 24 vozes) e `Vocoder` (12 formantes, portadora ruído/osc) integrados à cadeia.
 - ✅ Fusão com Extreme Audio Lab: `DestructionLab`, `ModMatrix`, `SubSynth`, 6 vozes de bateria, CI com 4 ABIs, kill switch e `resetDspState()`.
 - ✅ CI validado em 24/11/2026: artefato `ExtremeAudioLab-debug-v0.5.0` gerado (run #6), com as 4 ABIs.
@@ -15,7 +15,9 @@
 - ✅ Kaoss: latch confiável — arrastar usa sempre o estado atual, não reaplica programa antigo e não destrava o pad; travar congela x/y e trocar efeito preserva a escolha.
 - ✅ Estabilidade (feedback do usuário 24/11, run #12): `setTempo`, `setKaoss`, disparos de glitch/grãos e reset param de escrever direto no DSP pela thread da UI. Tudo passa por `std::atomic` e é aplicado em `applyDeferred_()`, dentro do callback. Saída com `isfinite` + clamp para um NaN nunca chegar ao Oboe.
 - ✅ `PULSE DEMON / Parede` reequilibrado: ruído branco contínuo no lugar do tipo "crackle" esparso, estalos menos frequentes, pump/saturação/volume reduzidos — parede cheia sem volume estourado.
-- ✅ Transformers em modo **solo**: intensidade global dos presets caiu de 0,80 para 0,20–0,30 e os efeitos secundários foram abaixados, deixando o vocoder/ring-mod/granular/glitch/ressonador de cada um identificável.
+- ✅ Presets "Transformers" **removidos** a pedido do usuário; o catálogo agora tem `PULSE DEMON / Parede`, `CAOS CONTROLADO` e `DRONE SUJO`.
+- ✅ Amostra do usuário: player nativo (`Sampler.h`) recebe WAV local (PCM 8/16/24/32 e float), toca como fonte antes do vocoder/glitch/granular/fuzz/destruição/Kaoss, com mix, afinação (±24 st), ponto de início e loop. Nenhum áudio de terceiros é distribuído no APK.
+- ✅ Três texturas harsh noise **originais** embutidas (`assets/samples/parede_01.wav`, `metal_01.wav`, `squeal_01.wav`), sintetizadas por `scripts/generate_samples.ps1` — sem rip de YouTube ou de álbuns comerciais — e acessíveis por botões na aba PATCH. O seletor de arquivos continua disponível para o WAV do próprio usuário.
 - ✅ Case eurorack realmente visível: orelhas laterais de madeira com parafusos, trilhos de 24 dp e faixa laranja; a Scaffold deixa de cobrir a moldura.
 - ✅ Barra inferior corrigida: `windowOptOutEdgeToEdgeEnforcement` + `navigationBarsPadding()` mantêm PATCH/SEQ/KAOSS/GRAVAR acima da navegação do Android 15 (targetSdk 35).
 
@@ -32,7 +34,8 @@
 - **Escalonamento por velocidade** do passo (pitch/velocity já existe; adicionar timbre por velocity).
 - **Visualizador de espectro/osciloscópio** em tempo real na UI.
 - **Sidechain**: bateria "ducando" o ruído/feedback para criar o pulsado da amostra.
-- **RingMod/FreqShifter standalone** e **SubPreservLimiter** multibanda (0–200 Hz) para completar a cadeia Transformers.
+- **RingMod/FreqShifter standalone** e **SubPreservLimiter** multibanda (0–200 Hz) para completar a cadeia de texturas metálicas.
+- **Amostra por MediaStore/Compartilhar**: receber um áudio direto do "Compartilhar com" do Android, além do seletor de arquivos.
 
 ## Transmissão / exportação
 - Trocar PCM por **Opus** (libopus) para reduzir banda de ~1,5 Mbps para ~96 kbps mantendo qualidade.

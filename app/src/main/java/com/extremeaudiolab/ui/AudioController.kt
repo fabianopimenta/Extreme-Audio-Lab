@@ -18,6 +18,9 @@ class AudioController(private val context: Context) {
             service = (binder as? AudioService.LocalBinder)?.service()
             bound = true
             service?.start()
+            // Se o usuário escolheu uma amostra antes do serviço subir, envia agora.
+            flushSample()
+            applySampleParams()
         }
         override fun onServiceDisconnected(name: ComponentName?) {
             service = null
@@ -125,6 +128,44 @@ class AudioController(private val context: Context) {
 
     fun triggerGlitch() = service?.triggerGlitch()
     fun triggerGranular() = service?.triggerGranular()
+
+    // ---- Amostra do usuário (WAV local) ----
+    var sampleName: String = ""
+        private set
+    var sampleMix: Float = 0.70f
+    var sampleTune: Float = 0f
+    var sampleStart: Float = 0f
+    var sampleLoop: Boolean = true
+
+    private var pendingSample: FloatArray? = null
+    private var pendingSampleRate: Int = 48_000
+
+    fun loadSample(samples: FloatArray, sampleRate: Int, displayName: String) {
+        sampleName = displayName
+        pendingSample = samples
+        pendingSampleRate = sampleRate
+        flushSample()
+        applySampleParams()
+    }
+
+    private fun flushSample() {
+        val s = service ?: return
+        val data = pendingSample ?: return
+        if (s.loadSample(data, pendingSampleRate)) {
+            pendingSample = null
+            s.setParam("sample", "trigger", 1f)
+        }
+    }
+
+    fun applySampleParams() {
+        val s = service ?: return
+        s.setParam("sample", "mix", sampleMix)
+        s.setParam("sample", "tune", sampleTune)
+        s.setParam("sample", "start", sampleStart)
+        s.setParam("sample", "loop", if (sampleLoop) 1f else 0f)
+    }
+
+    fun triggerSample() = service?.setParam("sample", "trigger", 1f)
 
     fun startRecording(path: String): Boolean = service?.startRecording(path) ?: false
     fun stopRecording(): String? = service?.stopRecording()

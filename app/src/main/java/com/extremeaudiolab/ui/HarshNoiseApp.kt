@@ -37,8 +37,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -218,7 +223,7 @@ fun ExtremeAudioApp() {
 /** Caixa do rack: o case inteiro aparece, com orelhas de madeira e trilhos de metal. */
 @Composable
 private fun RackFrame(content: @Composable () -> Unit) {
-    Row(Modifier.fillMaxSize().background(LabColors.Background)) {
+    Row(Modifier.fillMaxSize().background(Color(0xFF050505))) {
         RackEar()
         Column(Modifier.weight(1f).fillMaxHeight()) {
             RackRail()
@@ -229,48 +234,102 @@ private fun RackFrame(content: @Composable () -> Unit) {
     }
 }
 
-/** Laterais visíveis do case, com parafusos como num rack eurorack real. */
+/** Laterais de madeira do case, com veios e parafusos como num rack eurorack. */
 @Composable
 private fun RackEar() {
     Box(
         Modifier
             .fillMaxHeight()
-            .width(18.dp)
+            .width(22.dp)
             .background(
                 Brush.horizontalGradient(
-                    listOf(Color(0xFF100B08), LabColors.Wood, Color(0xFF3A2618), Color(0xFF0E0A07)),
+                    listOf(
+                        Color(0xFF0B0704),
+                        Color(0xFF2E1C11),
+                        Color(0xFF5B3A23),
+                        Color(0xFF3A2416),
+                        Color(0xFF0C0805),
+                    ),
                 ),
-            ),
+            )
+            .drawBehind {
+                // Veios verticais da madeira.
+                val step = 2.5.dp.toPx()
+                var x = 0f
+                while (x < size.width) {
+                    drawLine(
+                        Color.Black.copy(alpha = 0.16f),
+                        Offset(x, 0f), Offset(x, size.height), 0.8f,
+                    )
+                    x += step
+                }
+                // Brilho na aresta interna, onde o painel encosta.
+                drawLine(
+                    Color(0xFFFFD9B0).copy(alpha = 0.18f),
+                    Offset(size.width - 1f, 0f), Offset(size.width - 1f, size.height), 1f,
+                )
+                drawLine(
+                    Color.Black.copy(alpha = 0.55f),
+                    Offset(0f, 0f), Offset(0f, size.height), 2f,
+                )
+            },
     ) {
         Column(
             Modifier
                 .fillMaxHeight()
-                .padding(vertical = 12.dp),
+                .padding(vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceEvenly,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            repeat(7) { Screw(8.dp) }
+            repeat(5) { Screw(7.dp) }
         }
     }
 }
 
+/** Trilho de alumínio com fendas de parafuso, como os trilhos de 3U. */
 @Composable
 private fun RackRail() {
-    Column(
+    Box(
         Modifier
             .fillMaxWidth()
-            .height(24.dp)
-            .background(Brush.verticalGradient(listOf(Color(0xFF6B747C), LabColors.Rail, Color(0xFF1B2025)))),
+            .height(26.dp)
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF0A0C0E),
+                        Color(0xFF8A939B),
+                        Color(0xFF5A636B),
+                        Color(0xFF2A3036),
+                        Color(0xFF101417),
+                    ),
+                ),
+            )
+            .drawBehind {
+                val slot = 8.dp.toPx()
+                val gap = 15.dp.toPx()
+                val cy = size.height / 2f
+                var x = gap
+                while (x + slot < size.width - gap) {
+                    drawRoundRect(
+                        color = Color(0xFF05070A),
+                        topLeft = Offset(x, cy - slot / 2f),
+                        size = Size(slot, slot),
+                        cornerRadius = CornerRadius(1.5f, 1.5f),
+                    )
+                    drawRoundRect(
+                        color = Color(0xFFD5DCE2).copy(alpha = 0.35f),
+                        topLeft = Offset(x, cy - slot / 2f),
+                        size = Size(slot, slot),
+                        cornerRadius = CornerRadius(1.5f, 1.5f),
+                        style = Stroke(1f),
+                    )
+                    x += slot + gap
+                }
+            },
     ) {
-        Row(
-            Modifier.fillMaxWidth().weight(1f),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceEvenly,
-        ) {
-            repeat(9) { Screw(8.dp) }
-        }
         Box(
             Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(2.dp)
                 .background(EuroColors.Intellijel.copy(alpha = 0.55f)),

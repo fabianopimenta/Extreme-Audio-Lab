@@ -7,7 +7,8 @@
 [Mic] ────┤
 [Drums] ──┼─> [Mixer] ─> [Vocoder*] ─> [Glitch] ─> [Granular] ─> [Modal] ─> [HyperFuzz] ─> [DOD]
 [Sub] ────┤                                                                                       │
-[Synth] ──┘                                                                                       v
+[Synth] ──┤                                                                                       v
+[Sample] ─┘
                          [ModMatrix] ──(ruído/sub/synth/mic)──> [DestructionLab] ─> [KaossChain]
                                                                                         │
                                                                    [Breakdown duck] <──┘
@@ -17,6 +18,7 @@
                                                                                    └─> UDP sender
 
 * Vocoder: modulador = Mic, portadora = Noise/osc interno; blend controlado por `vocoderMix`.
+* Sample: WAV local carregado pelo usuário; entra no mesmo mixer antes de toda a cadeia.
 ```
 
 - **Controle**: Kotlin/Compose envia parâmetros via JNI para `AudioEngine`.
@@ -27,6 +29,7 @@
   - `ModMatrix`: LFO com 4 formas e 4 destinos (ruído, sub, synth, microfone), com escalas limitadas.
   - `SubSynth`: Sub Bass (10–200 Hz) e Synth (30–1200 Hz), 4 formas de onda, nível default 0 para preservar o patch da amostra.
   - `DrumSequencer`: 6 vozes (kick, snare, hat, tom, industrial hit, noise burst).
+  - `Sampler`: reproduz um WAV do usuário como fonte, com mix, afinação (±24 st), ponto de início e loop. O arquivo é lido no Kotlin (`WavImporter`, PCM 8/16/24/32 e float, até 20 s) e entregue ao C++ por `nativeLoadSample`; a troca de buffer acontece no callback com `try_lock`, e o player nunca aloca na thread de áudio.
 - **Reset de estado**: `AudioEngine::resetDspState()` apenas sinaliza `resetDspFlag` em `nativeStart`; o reset real de LFO, voices e ring buffer do microfone acontece no primeiro `render()`, na thread de áudio.
 - **Kaoss**: `latch` corrigido nas duas camadas — a UI congela x/y e usa sempre o estado atual (sem closure velho), e o C++ segue os valores recebidos. Arrastar nunca troca o programa nem destrava o pad.
 - **Gravação/stream**: a thread de áudio escreve no `WavWriter` e no `UdpSender` pré-alocados, sem alocação por amostra.

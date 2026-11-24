@@ -88,6 +88,12 @@ void AudioEngine::setParam(const std::string& module, const std::string& param, 
         else if (param == "saturation") p_.saturation = v;
         else if (param == "intensity") p_.intensity = v;
         else if (param == "pump") p_.pump = v;
+    } else if (module == "sample") {
+        if (param == "mix") p_.sampleMix = v;
+        else if (param == "tune") p_.sampleTune = v;
+        else if (param == "start") p_.sampleStart = v;
+        else if (param == "loop") p_.sampleLoop = v > 0.5f;
+        else if (param == "trigger") p_.triggerSampleFlag = true;
     }
 }
 
@@ -164,6 +170,18 @@ void AudioEngine::applyDeferred_() {
         granular_.trigger();
         modal_.excite(0.6f);
     }
+    // Amostra do usuário: assume o buffer novo e/ou reposiciona o playhead.
+    {
+        std::unique_lock<std::mutex> lk(sampleMutex_, std::try_to_lock);
+        if (lk.owns_lock() && samplePending_) {
+            sampler_.adopt(std::move(pendingSample_), pendingSampleSr_);
+            pendingSample_.clear();
+            samplePending_ = false;
+        }
+    }
+    if (p_.triggerSampleFlag.exchange(false, std::memory_order_relaxed)) {
+        sampler_.trigger();
+    }
 }
 
 void AudioEngine::applyParams_() {
@@ -199,6 +217,8 @@ void AudioEngine::applyParams_() {
                    (int)p_.modDest.load(), (int)p_.modShape.load());
     tones_.setSub(p_.subFreq.load(), p_.subLevel.load(), (int)p_.subWave.load());
     tones_.setSynth(p_.synthFreq.load(), p_.synthLevel.load(), (int)p_.synthWave.load());
+    sampler_.setParams(p_.sampleMix.load(), p_.sampleTune.load(),
+                       p_.sampleStart.load(), p_.sampleLoop.load());
 }
 
 void AudioEngine::render(float* out, int frames, int channels) {
@@ -253,10 +273,12 @@ void AudioEngine::render(float* out, int frames, int channels) {
         drums_.tick(localSteps[drums_.currentStep() < 0 ? 0 : drums_.currentStep()]);
         float drum = drums_.process(noise);
         float tone = tones_.process(sr_, subScale, synthScale);
+        // Amostra do usuário: entra como mais uma fonte, antes de toda a cadeia.
+        float smp = sampler_.process();
 
-        // Ruído, vozes e estalos ganham presença para que os faders sejam ouvidos.
+        // Ruído, vozes, amostra e estalos ganham presença para que os faders sejam ouvidos.
         float mix = noise * 1.05f + micOut * 0.90f + drum * 0.85f + tone * 0.90f
-                    + crack * (0.06f + it * 0.26f);
+                    + smp + crack * (0.06f + it * 0.26f);
         // O vocoder usa o microfone como modulador e o ruído como portadora.
         float voiced = vocoder_.process(mic, noise);
         float src = lerp(mix, voiced, p_.vocMix.load());
@@ -293,6 +315,16 @@ void AudioEngine::render(float* out, int frames, int channels) {
 
     float rms = std::sqrt(sumSq / std::max(1, frames * channels));
     meter_.store(std::max(rms, reduction), std::memory_order_relaxed);
+}
+
+bool AudioEngine::loadSample(const float* data, int frames, float fileSr) {
+    if (!data || frames <= 0) return false;
+    if (!std::isfinite(fileSr) || fileSr < 1000.f || fileSr > 384000.f) return false;
+    std::lock_guard<std::mutex> lk(sampleMutex_);
+    pendingSample_.assign(data, data + frames);
+    pendingSampleSr_ = fileSr;
+    samplePending_ = true;
+    return true;
 }
 
 bool AudioEngine::startRecording(const std::string& path) {

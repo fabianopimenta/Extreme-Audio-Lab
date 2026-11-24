@@ -1,5 +1,10 @@
 package com.extremeaudiolab.ui
 
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,13 +18,21 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import com.extremeaudiolab.audio.WavImporter
 import com.extremeaudiolab.model.Patch
 import com.extremeaudiolab.model.Preset
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @Composable
 fun PatchScreen(
@@ -55,6 +68,181 @@ fun PatchScreen(
                     modifier = Modifier.padding(top = 8.dp),
                 )
             }
+        }
+
+        SectionCard(
+            "Amostra / Sample",
+            "Toque o seu próprio áudio (WAV) dentro da cadeia. A amostra passa por todos os módulos e é transformada por eles.",
+            "▤",
+            EuroColors.Green,
+        ) {
+            val context = LocalContext.current
+            val scope = rememberCoroutineScope()
+            var sampleName by remember { mutableStateOf(controller.sampleName) }
+            var sampleInfo by remember { mutableStateOf("") }
+            var sampleError by remember { mutableStateOf<String?>(null) }
+            var loading by remember { mutableStateOf(false) }
+            var mix by remember { mutableFloatStateOf(controller.sampleMix) }
+            var tune by remember { mutableFloatStateOf(controller.sampleTune) }
+            var start by remember { mutableFloatStateOf(controller.sampleStart) }
+            var loop by remember { mutableStateOf(controller.sampleLoop) }
+
+            fun applyLoaded(displayName: String, loaded: WavImporter.Loaded) {
+                mix = 0.70f
+                tune = 0f
+                start = 0f
+                loop = true
+                controller.sampleMix = mix
+                controller.sampleTune = tune
+                controller.sampleStart = start
+                controller.sampleLoop = loop
+                controller.loadSample(loaded.samples, loaded.sampleRate, displayName)
+                sampleName = displayName
+                sampleInfo = "%.1f s · %d Hz · mono".format(loaded.seconds, loaded.sampleRate)
+            }
+
+            fun loadBuiltIn(assetPath: String, displayName: String) {
+                loading = true
+                sampleError = null
+                scope.launch {
+                    val loaded = withContext(Dispatchers.IO) {
+                        runCatching { WavImporter.loadAsset(context, assetPath) }.getOrNull()
+                    }
+                    loading = false
+                    if (loaded == null) {
+                        sampleError = "Não consegui abrir a textura embutida."
+                    } else {
+                        applyLoaded(displayName, loaded)
+                    }
+                }
+            }
+
+            val picker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+                if (uri != null) {
+                    loading = true
+                    sampleError = null
+                    scope.launch {
+                        val name = withContext(Dispatchers.IO) { queryDisplayName(context, uri) }
+                        val loaded = withContext(Dispatchers.IO) {
+                            runCatching { WavImporter.load(context, uri) }.getOrNull()
+                        }
+                        loading = false
+                        if (loaded == null) {
+                            sampleError = "Não consegui ler esse arquivo. Use um WAV (PCM 8/16/24/32 bits ou float)."
+                        } else {
+                            applyLoaded(name, loaded)
+                        }
+                    }
+                }
+            }
+
+            Text(
+                "Texturas originais do laboratório — sintetizadas pelo próprio PMNT, sem gravações de terceiros. Toque para carregar e já ouvir na cadeia:",
+                style = MaterialTheme.typography.bodySmall,
+                color = LabColors.TextMuted,
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                ActionButton(
+                    "Parede",
+                    { loadBuiltIn("samples/parede_01.wav", "Parede (original)") },
+                    enabled = !loading,
+                    modifier = Modifier.weight(1f),
+                )
+                ActionButton(
+                    "Metal",
+                    { loadBuiltIn("samples/metal_01.wav", "Metal (original)") },
+                    enabled = !loading,
+                    modifier = Modifier.weight(1f),
+                )
+                ActionButton(
+                    "Squeal",
+                    { loadBuiltIn("samples/squeal_01.wav", "Squeal (original)") },
+                    enabled = !loading,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            Text(
+                "Use só áudio que você tem direito de usar. O PMNT não inclui gravações de terceiros.",
+                style = MaterialTheme.typography.bodySmall,
+                color = LabColors.TextMuted,
+                modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
+            )
+            ActionButton(
+                text = if (loading) "Lendo amostra…" else "Carregar amostra (WAV)",
+                onClick = { picker.launch(arrayOf("*/*")) },
+                enabled = !loading,
+            )
+            if (sampleName.isNotBlank()) {
+                Text(
+                    "Amostra: $sampleName",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = EuroColors.Green,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+            if (sampleInfo.isNotBlank()) {
+                Text(sampleInfo, style = MaterialTheme.typography.bodySmall, color = LabColors.TextMuted)
+            }
+            sampleError?.let {
+                Text(it, style = MaterialTheme.typography.bodySmall, color = LabColors.Danger)
+            }
+
+            Fader(
+                "MIX DA AMOSTRA", mix, 0f..1f,
+                {
+                    mix = it
+                    controller.sampleMix = it
+                    controller.applySampleParams()
+                },
+                description = "Quanto da sua amostra entra na mistura. Em 0 ela fica muda; em 0,6–0,8 ela conduz a cadeia e ainda deixa o ruído aparecer.",
+            )
+            Fader(
+                "AFINAÇÃO DA AMOSTRA", tune, -24f..24f,
+                {
+                    tune = it
+                    controller.sampleTune = it
+                    controller.applySampleParams()
+                },
+                unit = " st",
+                description = "Muda a velocidade e o tom da amostra, de duas oitavas abaixo a duas acima. Valores extremos viram drone ou zumbido.",
+            )
+            Fader(
+                "INÍCIO / SCAN", start, 0f..1f,
+                {
+                    start = it
+                    controller.sampleStart = it
+                    controller.applySampleParams()
+                    controller.triggerSample()
+                },
+                description = "Escolhe de onde a amostra começa. Arraste para varrer o arquivo e encontrar um trecho; cada mudança dispara do novo ponto.",
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("REPETIR (LOOP)", style = MaterialTheme.typography.labelLarge, color = LabColors.Text)
+                    Text(
+                        "Ligado, a amostra gira sem parar; desligado, toca uma vez e para.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = LabColors.TextMuted,
+                    )
+                }
+                Switch(
+                    checked = loop,
+                    onCheckedChange = {
+                        loop = it
+                        controller.sampleLoop = it
+                        controller.applySampleParams()
+                    },
+                )
+            }
+            ActionButton("Disparar do início", onClick = { controller.triggerSample() })
+            Text(
+                "A amostra entra antes do vocoder, glitch, granular, fuzz, death metal, destruição e Kaoss — por isso ela é quebrada e ressignificada, como pede a proposta do laboratório.",
+                style = MaterialTheme.typography.bodySmall,
+                color = LabColors.TextMuted,
+                modifier = Modifier.padding(top = 6.dp),
+            )
         }
 
         SectionCard(
@@ -316,4 +504,17 @@ fun PatchScreen(
             }
         }
     }
+}
+
+/** Nome legível do arquivo escolhido no seletor do Android. */
+private fun queryDisplayName(context: android.content.Context, uri: Uri): String {
+    val fallback = uri.lastPathSegment
+        ?.substringAfterLast('/')
+        ?.takeIf { it.isNotBlank() }
+        ?: "amostra.wav"
+    return runCatching {
+        context.contentResolver
+            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { c -> if (c.moveToFirst()) c.getString(0) else null }
+    }.getOrNull() ?: fallback
 }

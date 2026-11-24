@@ -2,6 +2,7 @@
 #include <oboe/Oboe.h>
 #include <memory>
 #include <string>
+#include <vector>
 #include "AudioEngine.h"
 
 using namespace hn;
@@ -151,6 +152,17 @@ JNIEXPORT void JNICALL
 Java_com_extremeaudiolab_audio_NativeEngine_nativeTriggerGranular(JNIEnv*, jobject, jlong handle) {
     auto* h = asHandle(handle);
     if (h) h->engine->triggerGranular();
+}
+
+JNIEXPORT jboolean JNICALL
+Java_com_extremeaudiolab_audio_NativeEngine_nativeLoadSample(
+        JNIEnv* env, jobject, jlong handle, jfloatArray data, jint frames, jfloat fileSr) {
+    auto* h = asHandle(handle);
+    if (!h || !data || frames <= 0) return JNI_FALSE;
+    std::vector<float> tmp((size_t)frames, 0.f);
+    env->GetFloatArrayRegion(data, 0, frames, tmp.data());
+    const bool ok = h->engine->loadSample(tmp.data(), frames, fileSr);
+    return ok ? JNI_TRUE : JNI_FALSE;
 }
 
 JNIEXPORT jboolean JNICALL
