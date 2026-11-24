@@ -1,6 +1,6 @@
 {
   "name": "Harsh Sample Emulation",
-  "description": "Patch inicial derivado da análise espectral da amostra: grave saturado, howl de microfone, bateria com pitch e cadeia fuzz → death metal → kaoss. Vocoder, glitch, granular e ressonador ficam sutis (mix 0) para preservar a sonoridade original; os presets Transformers os ativam.",
+  "description": "Patch inicial derivado da análise espectral da amostra: grave saturado, howl de microfone, bateria com pitch e cadeia fuzz → death metal → kaoss. Agora com respiração lenta e saturação ajustável para o som 'viver' sem tocar nos faders.",
   "noiseType": 1,
   "noiseLevel": 0.35,
   "noiseCrush": 8.0,
@@ -62,8 +62,11 @@
   "subFrequency": 55.0, "subLevel": 0.0, "subWave": 0,
   "synthFrequency": 110.0, "synthLevel": 0.0, "synthWave": 3,
   "kaoss": {"program": 0, "x": 0.35, "y": 0.42, "latch": false, "mix": 0.55},
-  "limiterThreshold": -3.0,
+  "limiterThreshold": -2.0,
   "masterGain": 0.70,
+  "motionDepth": 0.30,
+  "motionRate": 0.35,
+  "saturation": 0.25,
   "presets": [
     {
       "name": "Transformer - Prime",

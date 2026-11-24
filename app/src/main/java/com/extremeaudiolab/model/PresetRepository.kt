@@ -112,8 +112,11 @@ object PresetRepository {
                 latch = k.optBoolean("latch", false),
                 mix = k.optDouble("mix", 1.0).toFloat(),
             ),
-            limiterThreshold = o.optDouble("limiterThreshold", -3.0).toFloat(),
+            limiterThreshold = o.optDouble("limiterThreshold", -2.0).toFloat(),
             masterGain = o.optDouble("masterGain", 0.7).toFloat(),
+            motionDepth = o.optDouble("motionDepth", 0.30).toFloat(),
+            motionRate = o.optDouble("motionRate", 0.35).toFloat(),
+            saturation = o.optDouble("saturation", 0.25).toFloat(),
         )
     }
 }

@@ -79,6 +79,9 @@ void AudioEngine::setParam(const std::string& module, const std::string& param, 
     } else if (module == "master") {
         if (param == "threshold") p_.threshold = v;
         else if (param == "gain") p_.masterGain = v;
+        else if (param == "motion") p_.motionDepth = v;
+        else if (param == "motionRate") p_.motionRate = v;
+        else if (param == "saturation") p_.saturation = v;
     }
 }
 
@@ -153,7 +156,16 @@ void AudioEngine::render(float* out, int frames, int channels) {
     if ((size_t)frames * channels > mixBuf_.size()) mixBuf_.resize((size_t)frames * channels * 2);
 
     float sumSq = 0.f, reduction = 0.f;
+    const float motionDepth = clamp(p_.motionDepth.load(), 0.f, 1.f);
+    const float motionInc = 6.2831853f * clamp(p_.motionRate.load(), 0.05f, 4.f) / sr_;
+    const float sat = clamp(p_.saturation.load(), 0.f, 1.f);
     for (int i = 0; i < frames; ++i) {
+        // Respiração global: dois LFOs lentos dão vida ao som mesmo sem tocar nos faders.
+        motionPhase_ += motionInc;
+        if (motionPhase_ >= 6.2831853f) motionPhase_ -= 6.2831853f;
+        const float swell = std::sin(motionPhase_) * motionDepth;
+        const float shimmer = std::sin(motionPhase_ * 2.7f + 0.8f) * motionDepth;
+
         // Mod Matrix: escalas limitadas, sem alterar os átomos base.
         const float lfo = mod_.next(sr_);
         float noiseScale = 1.f, subScale = 1.f, synthScale = 1.f, micScale = 1.f;
@@ -163,14 +175,15 @@ void AudioEngine::render(float* out, int frames, int channels) {
             case 2: synthScale = clamp(1.f + lfo, 0.f, 2.f); break;
             default: micScale = clamp(1.f + lfo, 0.f, 2.f); break;
         }
-        float noise = noise_.process() * noiseScale;
+        float noise = noise_.process() * noiseScale * (1.f + shimmer * 0.65f);
         float mic = popMic_();
         float micOut = mic_.process(mic) * micScale;
         drums_.tick(localSteps[drums_.currentStep() < 0 ? 0 : drums_.currentStep()]);
         float drum = drums_.process(noise);
         float tone = tones_.process(sr_, subScale, synthScale);
 
-        float mix = noise * 0.55f + micOut * 0.85f + drum * 0.95f + tone * 0.8f;
+        // Ruído e vozes tonais ganham presença para que seus faders sejam ouvidos.
+        float mix = noise * 0.95f + micOut * 0.90f + drum * 0.85f + tone * 0.90f;
         // O vocoder usa o microfone como modulador e o ruído como portadora.
         float voiced = vocoder_.process(mic, noise);
         float src = lerp(mix, voiced, p_.vocMix.load());
@@ -183,8 +196,15 @@ void AudioEngine::render(float* out, int frames, int channels) {
         x = kaoss_.process(x);
         // Breakdown: o gate do glitch ducka a cadeia antes do limitador.
         x *= (1.f - glitch_.activity());
-        x = limiter_.process(x, p_.threshold.load(), reduction);
+        x *= (1.f + swell * 0.45f);
+        // Volume antes do limitador: o fader de volume agora altera o nível real.
         x *= p_.masterGain.load();
+        x = limiter_.process(x, p_.threshold.load(), reduction);
+        // Cor final opcional: saturação controlável sem "achatar" a dinâmica abaixo dela.
+        if (sat > 0.01f) {
+            const float drive = 1.f + sat * 6.f;
+            x = fastTanh(x * drive) / fastTanh(drive);
+        }
 
         for (int c = 0; c < channels; ++c) {
             float v = x;

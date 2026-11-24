@@ -3,17 +3,20 @@
 
 namespace hn {
 
-/** Limitador de pico com soft-clip final e medidor de redução de ganho. */
+/**
+ * Limitador de pico transparente: só intervém quando o sinal passa do teto.
+ * Abaixo do teto a passagem é linear — importante para que os faders alterem
+ * o volume de verdade em vez de serem "achatados" por compressão constante.
+ */
 class Limiter {
 public:
     float process(float in, float thresholdDb, float& reduction) {
-        float th = dbToGain(clamp(thresholdDb, -24.f, 0.f));
-        env_ = std::max(std::fabs(in), env_ * 0.994f); // release
-        float gain = env_ > th ? th / env_ : 1.f;
-        gain_ = lerp(gain_, gain, env_ > gain_ * th ? 0.35f : 0.04f);
-        float out = fastTanh(in * gain_ * 1.05f);
+        float th = dbToGain(clamp(thresholdDb, -12.f, 0.f));
+        env_ = std::max(std::fabs(in), env_ * 0.9975f); // release
+        float target = env_ > th ? th / env_ : 1.f;
+        gain_ = lerp(gain_, target, target < gain_ ? 0.30f : 0.035f);
         reduction = 1.f - gain_;
-        return clamp(out, -1.f, 1.f);
+        return clamp(in * gain_, -1.f, 1.f);
     }
 
 private:

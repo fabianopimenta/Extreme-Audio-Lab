@@ -85,6 +85,10 @@ data class Patch(
     val synthLevel: Float = 0f,
     val synthWave: Int = 3,
     val kaoss: KaossState = KaossState(),
-    val limiterThreshold: Float = -3f,
+    val limiterThreshold: Float = -2f,
     val masterGain: Float = 0.7f,
+    // Dinâmica: movimento lento (respiração) e saturação final controlável.
+    val motionDepth: Float = 0.30f,
+    val motionRate: Float = 0.35f,
+    val saturation: Float = 0.25f,
 )
