@@ -26,14 +26,14 @@ public:
     void setParams(int mode, float rate, float sizeMs, float decimate, float bits,
                    float mix, float probability, float gateDepth) {
         mode_ = clamp(mode, 0, 3);
-        rate_ = clamp(rate, 0.5f, 40.f);
+        const float clampedRate = clamp(rate, 0.5f, 40.f);
         sizeMs_ = clamp(sizeMs, 10.f, 400.f);
         decimate_ = clamp(decimate, 1.f, 64.f);
         bits_ = clamp(bits, 2.f, 16.f);
         mix_ = clamp(mix, 0.f, 1.f);
         probability_ = clamp(probability, 0.f, 1.f);
         gateDepth_ = clamp(gateDepth, 0.f, 1.f);
-        period_ = sr_ / rate_;
+        period_ = sr_ / clampedRate;
     }
 
     /** Dispara um evento manualmente (botão "Glitch" na UI). */
